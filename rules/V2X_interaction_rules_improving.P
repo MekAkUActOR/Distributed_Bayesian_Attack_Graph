@@ -1,0 +1,564 @@
+% MulVAL interaction rules
+% Author : Xinming Ou, Su Zhang
+% Copyright (C) 2011, Argus Cybersecurity Lab, Kansas State University
+
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+% 
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+% 
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+/******************************************************/
+/****         Predicates Declaration              *****/
+/******************************************************/
+
+primitive(inCompetent(_principal)).
+primitive(competent(_principal)).
+primitive(clientProgram(_host, _programname)).
+primitive(vulExists(_host, _vulID, _program)).
+primitive(vulProperty(_vulID, _range, _consequence)).
+primitive(hacl(_src, _dst, _prot, _port)).
+primitive(attackerLocated(_host)).
+primitive(hasAccount(_principal, _host, _account)).
+primitive(networkServiceInfo(_host, _program, _protocol, _port, _user)).
+primitive(setuidProgramInfo(_host, _program, _owner)).
+primitive(nfsExportInfo(_server, _path, _access, _client)).
+primitive(nfsMounted(_client, _clientpath, _server, _serverpath, _access)).
+primitive(localFileProtection(_host, _user, _access, _path)).
+primitive(dependsOn(_h, _program, _library)).
+primitive(installed(_h, _program)).
+primitive(bugHyp(_,_,_,_)).
+primitive(vulExists(_machine,_vulID,_program,_range,_consequence)).
+primitive(canAccessFile(_host, _user, _access, _path)).
+primitive(isWebServer(_host)).
+
+primitive(pvexecCode(_host, _user)).
+primitive(pvnetAccess(_machine,_protocol,_port)).
+primitive(pvcanAccessHost(_host)).
+primitive(pvaccessFile(_machine,_access,_filepath)).
+primitive(pvaccessMaliciousInput(_host, _principal, _program)).
+primitive(pvprincipalCompromised(_victim)).
+primitive(pvdos(_host)).
+primitive(pvlogInService(_host, _protocol, _port)).
+
+primitive(pvvehicleAccess(_vehicle, _loc)).
+primitive(pvcontrol(_vehicle)).
+
+meta(cvss(_vulID, _ac)).
+
+
+derived(execCode(_host, _user)).
+derived(netAccess(_machine,_protocol,_port)).
+derived(canAccessHost(_host)).
+derived(accessFile(_machine,_access,_filepath)).
+derived(accessMaliciousInput(_host, _principal, _program)).
+derived(principalCompromised(_victim)).
+derived(dos(_host)).
+derived(logInService(_host, _protocol, _port)).
+
+primitive(vState(_vehicle, _state)).
+primitive(installed(_h, _component)).
+primitive(pair(_mobile, _vehicle, _comm)).
+
+derived(vehicleAccess(_vehicle, _loc)).
+derived(control(_vehicle)).
+
+
+meta(attackGoal(_)).
+meta(advances(_, _)).
+
+/******************************************************/
+/****         Tabling Predicates                  *****/
+/*   All derived predicates should be tabled          */
+/******************************************************/
+
+:- table execCode/2.
+:- table netAccess/3.
+:- table canAccessHost/1.
+:- table canAccessFile/4.
+:- table accessFile/3.
+:- table principalCompromised/1.
+:- table vulExists/5.
+:- table logInService/3.
+
+:- table vehicleAccess/3.
+:- table control/2.
+
+
+
+/******************************************************/
+/****         Interaction Rules                   *****/
+/******************************************************/
+
+/***************************************/
+/****           V2X Rules           ****/
+/***************************************/
+
+interaction_rule(
+  (control(V) :-
+    execCode(V, root),
+    vState(V, _)),
+  rule_desc('Vehicle is controlled when the OS is compromised', 1)).
+
+interaction_rule(
+  (vehicleAccess(V, inside) :-
+    vState(V, unlocked),
+    attackerLocated(physics)),
+  rule_desc('Enter a vehicle when the vehicle is unlocked', 1)).
+
+interaction_rule(
+  (vehicleAccess(V, inside) :-
+    execCode(V, Perm),
+    vState(V, _)),
+  rule_desc('Equivalent inside', 1)).
+
+interaction_rule(
+  (vehicleAccess(V, adj) :-
+    attackerLocated(physics),
+    vState(V, locked)),
+  rule_desc('Can access a locked vehicle nearby', 1)).
+
+/*
+interaction_rule(
+  (vehicleAccessAdj(V) :-
+    control(X),
+    hacl(X, V, _, _),
+    vState(V, _)),
+  rule_desc('V2V communication', 0.8)).
+*/
+
+
+interaction_rule(
+  (vehicleAccess(V, inside) :-
+    installed(V, Component),
+    vehicleAccess(V, _Loc),
+    vulExists(V, _, Component, phyShortExploit, infoLeak)),
+  rule_desc('Leak the password to unlock', 1)).
+
+
+interaction_rule(
+  (control(V) :-
+    installed(V, Component),
+    vehicleAccess(V, _Loc),
+    vulExists(V, _, Component, phyShortExploit, verifiBypass)),
+  rule_desc('Short range bypass to control', 1)).
+
+interaction_rule(
+  (control(V) :-
+    installed(V, Component),
+    vehicleAccess(V, inside),
+    vulExists(V, _, Component, phyLocalExploit, verifiBypass)),
+  rule_desc('Local bypass to control', 1)).
+
+
+interaction_rule(
+  (control(V) :-
+    installed(V, Component),
+    execCode(V, Perm),
+    vState(V, _),
+    vulExists(V, _, Component, localExploit, verifiBypass)),
+  rule_desc('Leverage local OS to bypass to control', 1)).
+
+
+interaction_rule(
+  (control(V) :-
+    installed(M, APP),
+    pair(M, V, Comm),
+    execCode(M, Perm),
+    vulExists(M, _, APP, localExploit, verifiBypass)),
+  rule_desc('Compromised APP control vehicle', 1)).
+
+interaction_rule(
+  (control(V) :-
+    pair(M, V, Comm),
+    execCode(M, root)),
+  rule_desc('Compromised Mobile control vehicle', 1)).
+
+interaction_rule(
+  (vehicleAccess(V, inside) :-
+    pair(_, V, Comm),
+    vehicleAccess(V, _Loc),
+    vulExists(Comm, _, Component, phyShortExploit, infoLeak)),
+  rule_desc('Sniff infomation from channel to unlock', 1)).
+
+
+interaction_rule(
+  (execCode(V, _) :-
+    pair(_, V, Comm),
+    vehicleAccess(V, _Loc),
+    vulExists(Comm, _, Component, phyShortExploit, verifiBypass)),
+  rule_desc('Short range channel bypass to execute', 1)).
+
+
+
+/***************************************/
+/****         Common Rules          ****/
+/***************************************/
+
+/****** Section execCode ******
+interaction_rule(
+   (execCode(H, Perm) :-
+	 hasAccount(adversary, H, Perm)),
+   rule_desc('Insider threat', 1)).
+*/
+
+interaction_rule(
+   (execCode(Host, Perm) :-
+	principalCompromised(Victim),
+	hasAccount(Victim, Host, Perm),
+	canAccessHost(Host)),
+   rule_desc('When a principal is compromised any machine he has an account on will also be compromised',
+   0.5)).
+
+interaction_rule(
+  (execCode(Host, root) :-
+	execCode(Host, _Perm2),
+	vulExists(Host, _, Software, localExploit, privEscalation)),
+  rule_desc('local exploit',
+  1.0)).
+
+interaction_rule(
+  (execCode(H, Perm) :-
+	vulExists(H, _, Software, remoteExploit, privEscalation),
+	networkServiceInfo(H, Software, Protocol, Port, Perm),
+	netAccess(H, Protocol, Port)),
+  rule_desc('remote exploit of a server program',
+  1.0)).
+
+interaction_rule(
+  (execCode(H, Perm) :-
+  vulExists(H, _, Software, remoteClient, privEscalation),
+	hasAccount(Victim, H, Perm),
+  accessMaliciousInput(H, Victim, Software)),
+  rule_desc('remote exploit for a client program',
+  0.5)).
+
+interaction_rule(
+  (execCode(H, root) :-
+	accessFile(H, write, _Path)),
+  rule_desc('Trojan horse installation',
+  0.8)).
+
+/* Singleton variable at head
+interaction_rule(
+ (execCode( Attacker, Host, _) :-
+   execCode(Attacker, Host, root)),
+  'execution at any level if root execution').
+*/
+
+
+
+/******** Section netAccess ********/
+/* accessing a host through network according to a hacl policy.
+   For now we assume that every user on a local
+   machine has access to network. this may change
+   later. */
+interaction_rule(
+  (netAccess(H2, Protocol, Port) :-
+	execCode(H1, _Perm),  /* Any permission level */
+	advances(H1, H2),
+    hacl(H1, H2, Protocol, Port)),
+  rule_desc('multi-hop access',
+  0.5)).
+
+interaction_rule(
+  (netAccess(H, Protocol, Port) :-
+	attackerLocated(Zone),
+	hacl(Zone, H, Protocol, Port)),
+  rule_desc('direct network access',
+  1.0)).
+
+interaction_rule(
+  (netAccess(H, Protocol, Port) :-
+	attackerLocated(H)),
+  rule_desc('direct on-host access',
+  1.0)).
+
+
+/****** Section canAccessHost ******/
+interaction_rule(
+  (canAccessHost(H) :-
+	execCode(H, _Perm)),
+  rule_desc('Access a host through executing code on the machine',
+  1.0)).
+
+interaction_rule(
+  (canAccessHost(H) :-
+	logInService(H, Protocol, Port),
+	netAccess(H, Protocol, Port)),
+  rule_desc('Access a host through a log-in service',
+  1.0)).
+
+
+/******** Section accessFile ********/
+interaction_rule(
+  (accessFile(H, Access, Path) :-
+	execCode(H, Usr),
+	canAccessFile(H, Usr, Access, Path)),
+  rule_desc('execCode implies file access',
+  1.0)).
+
+
+/****** Section principalCompromised ******/
+interaction_rule(
+  (principalCompromised(Victim) :-
+	hasAccount(Victim, H, _Perm),
+	execCode(H, root)),
+  rule_desc('password sniffing',
+  0.8)).
+
+interaction_rule(
+  (principalCompromised(Victim) :-
+	hasAccount(Victim, H, User),
+	execCode(H, User)),
+  rule_desc('password sniffing',
+  0.8)).
+
+/*
+interaction_rule(
+  (principalCompromised(Victim) :-
+	inCompetent(Victim)),
+  rule_desc('incompetent user',
+  0.2)).
+*/
+
+
+
+/********************************************************/
+/*      Software specific knowledge                     */
+/********************************************************/
+
+/*
+explain(logInService(H, Protocol, Port), Text) :-
+	fmt_write_string(Text,
+  "There is a login service running under protocol %S and port %S on host %S.", args(Protocol, Port, H)).
+*/
+
+
+
+/***************** Section ssh **********************/
+interaction_rule(
+  (logInService(H, Protocol, Port) :-
+	networkServiceInfo(H, sshd, Protocol, Port, _)),
+  rule_desc('Provide login service ssh',
+  1)).
+
+interaction_rule(
+  (logInService(H, Protocol, Port) :-
+	networkServiceInfo(H, vpnService, Protocol, Port, _)),
+  rule_desc('Provide login service vpn',
+  1)).
+
+
+/**************** Section  nfs *****************/
+/* Principal P can access files on a NFS server if the files
+   on the server are mounted at a client and he can access the
+   files on the client side */
+interaction_rule(
+  (accessFile(Server, Access, ServerPath) :-
+	nfsMounted(Client, ClientPath, Server, ServerPath, Access),
+	accessFile(Client, Access, ClientPath)),
+  rule_desc('NFS semantics',
+  1)).
+
+
+/* Principal P can access files on a NFS client if the files
+   on the server are mounted at the client and he can access the
+   files on the server side */
+interaction_rule(
+  (accessFile(Client, Access, ClientPath) :-
+	nfsMounted(Client, ClientPath, Server, ServerPath, read),
+	accessFile(Server, Access, ServerPath)),
+  rule_desc('NFS semantics',
+  1)).
+
+
+interaction_rule(
+  (accessFile(Server, Access, Path) :-
+	execCode(Client, _User),
+    nfsExportInfo(Server, Path, Access, Client),
+    hacl(Client, Server, nfsProtocol, nfsPort)),
+  rule_desc('NFS shell',
+  0.8)).
+
+
+interaction_rule(
+  (canAccessFile(H, Usr, Acc, Path) :-
+	localFileProtection(H, Usr, Acc, Path)),
+  rule_desc('',
+  1)).
+
+
+/* Singleton variable in head
+interaction_rule(
+  (canAccessFile(_H, root, _Access, _Path)),
+  'root has arbitrary access').
+*/
+
+
+interaction_rule((vulExists(H, ID, Sw, Range, Consequence):-
+	        vulExists(H, ID, Sw),
+		vulProperty(ID, Range, Consequence)),
+             rule_desc('',
+             1)).
+
+interaction_rule((vulExists(H, _ID, Sw, Range, Consequence):-
+	        bugHyp(H, Sw, Range, Consequence)),
+             rule_desc('Introducing hypothetical bug',
+             1)).
+
+
+interaction_rule((vulExists(H, ID, Sw, Range, Consequence):-
+	        vulExists(H, ID, Library, Range, Consequence),
+		dependsOn(H, Sw, Library)),
+             rule_desc('Library bug',
+             1)).
+
+
+interaction_rule(
+   (accessMaliciousInput(H, Victim, Sw) :-
+     inCompetent(Victim),
+     clientProgram(H, Sw),
+     hacl(H, MaliciousMachine, httpProtocol, httpPort),
+     attackerLocated(MaliciousMachine)),
+  rule_desc('Browsing a malicious website', 0.8)).
+
+interaction_rule(
+   (accessMaliciousInput(H, Victim, Sw) :-
+     competent(Victim),
+     clientProgram(H, Sw),
+     hacl(H, MaliciousMachine, httpProtocol, httpPort),
+     attackerLocated(MaliciousMachine)),
+  rule_desc('Browsing a malicious website', 0.1)).
+
+interaction_rule(
+   (accessMaliciousInput(H, Victim, Sw) :-
+     inCompetent(Victim),
+     isWebServer(CompromisedMachine),
+     clientProgram(H, Sw),
+     hacl(H, CompromisedMachine, httpProtocol, httpPort),
+     execCode(CompromisedMachine, _)),
+  rule_desc('Browsing a compromised website', 0.4)).
+
+
+/*
+interaction_rule(
+   (canAccessMaliciousInput(H, Browser) :-
+     installed(H, Browser),
+     isWebBrowser(Browser)),
+  rule_desc('A browser can potentially access malicious input',
+  1)).
+
+
+interaction_rule(
+   (canAccessMaliciousInput(H, Software) :-
+	vulExists(H, _, Software, remoteClient, privEscalation),
+	inCompetent(Victim),
+	hasAccount(Victim, H, _Perm)),
+  rule_desc('A remote client vulnerability can potentially access malicious input from a host used by careless user',
+  1)).
+
+
+interaction_rule(
+   (canAccessMaliciousInput(H, Browser) :-
+     installed(H, Browser),
+     isWebBrowser(Browser),
+     hacl(H, MaliciousMachine, httpProtocol, httpPort),
+     attackerLocated(MaliciousMachine)),
+  rule_desc('Browsing a malicious website',
+  1)).
+
+interaction_rule(
+   (canAccessMaliciousInput(H, Browser) :-
+     installed(H, Browser),
+     isWebBrowser(Browser),
+     hacl(H, CompromisedMachine, httpProtocol, httpPort),
+     execCode(CompromisedMachine, _)),
+  rule_desc('Browsing a compromised website',
+  0.4)).
+
+interaction_rule(
+   (canAccessMaliciousInput(H, EmailClientSoftware) :-
+     installed(H, EmailClientSoftware),
+     isEmailClient(EmailClientSoftware),
+     isEmailServer(EmailServerSoftware),
+     hacl(H, EmailServer, EmailProtocol, EmailPort),
+     networkServiceInfo(EmailServer, EmailServerSoftware,
+                                EmailProtocol, EmailPort, _Perm)),
+   rule_desc('receive an email message',
+   0.4)).
+
+*/
+
+/***************************************/
+/****           PV Rules           ****/
+/***************************************/
+
+interaction_rule(
+   (execCode(H, Perm) :-
+   pvexecCode(H, Perm)),
+   rule_desc('PV rule', 1)).
+
+interaction_rule(
+   (netAccess(H,P,C) :-
+   pvnetAccess(H,P,C)),
+   rule_desc('PV rule', 1)).
+
+interaction_rule(
+   (canAccessHost(H) :-
+   pvcanAccessHost(H)),
+   rule_desc('PV rule', 1)).
+
+interaction_rule(
+   (accessFile(H,A,F) :-
+   pvaccessFile(H,A,F)),
+   rule_desc('PV rule', 1)).
+
+interaction_rule(
+   (accessMaliciousInput(H, P, S) :-
+   pvaccessMaliciousInput(H, P, S)),
+   rule_desc('PV rule', 1)).
+
+interaction_rule(
+   (principalCompromised(P) :-
+   pvprincipalCompromised(P)),
+   rule_desc('PV rule', 1)).
+
+interaction_rule(
+   (dos(H) :-
+   pvdos(H)),
+   rule_desc('PV rule', 1)).
+
+interaction_rule(
+   (logInService(H, P, C) :-
+   pvlogInService(H, P, C)),
+   rule_desc('PV rule', 1)).
+
+interaction_rule(
+   (control(V) :-
+   pvcontrol(V)),
+   rule_desc('PV rule', 1)).
+
+
+interaction_rule(
+   (vehicleAccess(V, L) :-
+   pvvehicleAccess(V, L)),
+   rule_desc('PV rule', 1)).
+
+
+
+
+
+
+
+
+
+
