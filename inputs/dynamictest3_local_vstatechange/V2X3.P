@@ -1,0 +1,92 @@
+attackerLocated(internet).
+attackerLocated(physics).
+
+attackGoal(control(_)).
+attackGoal(execCode(_,_)).
+attackGoal(inside(_)).
+
+hacl(X,Y,_,_):-
+	inSubnet(X,S),
+	inSubnet(Y,S).
+
+hacl(internet,cloudplat_webserver1,httpProtocol,httpPort).
+hacl(internet,cloudplat_database1,tcp,sqlPort).
+
+
+hacl(M,cloudplat_webserver1,httpProtocol,httpPort):-
+	inSubnet(M,S).
+
+hacl(N,cloudplat_database1,tcp,sqlPort):-
+	inSubnet(N,S).
+
+hacl(physics, X, _, _):-
+	inSubnet(X,vsubnet1).
+
+hacl(physics, X, _, _):-
+	inSubnet(X,vsubnet2).
+
+hacl(physics, X, _, _):-
+	inSubnet(X,vsubnet3).
+
+/******************************************/
+/* configuration information of cloudplat */
+/******************************************/
+
+inSubnet(cloudplat_webserver1, cloudplat).
+inSubnet(cloudplat_database1, cloudplat).
+
+isWebServer(cloudplat_webserver1).
+pvexecCode(cloudplat_webserver1,user).
+
+/*****************************************/
+/* configuration information of vsubnet3 */
+/*****************************************/
+inSubnet(vsubnet3_MECserver, vsubnet3).
+inSubnet(vehicle8, vsubnet3).
+inSubnet(mobile8, vsubnet3).
+inSubnet(vehicle10, vsubnet3).
+inSubnet(vehicle11, vsubnet3).
+inSubnet(vsubnet3_RSU, vsubnet3).
+
+vState(vehicle8, mov).
+vState(vehicle10, mov).
+vState(vehicle11, unlocked).
+
+inCompetent(vehicle8Owner).
+hasAccount(vehicle8Owner, vehicle8, user).
+hasAccount(vehicle8Owner, mobile8, user).
+inCompetent(vehicle10Owner).
+hasAccount(vehicle10Owner, vehicle10, user).
+inCompetent(vehicle11Owner).
+hasAccount(vehicle11Owner, vehicle11, user).
+
+pair(mobile8, vehicle8, bluetooth8).
+
+
+clientProgram(mobile8, chrome).
+vulExists(mobile8, 'CVE-2021-21220', chrome).
+vulProperty('CVE-2021-21220', remoteClient, privEscalation).
+
+
+setuidProgramInfo(mobile8, wifidriver, _).
+vulExists(mobile8, 'CVE-2017-6424', wifidriver).
+vulProperty('CVE-2017-6424', localExploit, privEscalation).
+
+
+installed(vehicle10, obd2).
+vulExists(vehicle10, 'CVE-2016-2354', obd2).
+vulProperty('CVE-2016-2354', phyShortExploit, verifiBypass).
+
+
+installed(vehicle11, headUnitHU_NBT).
+vulExists(vehicle11, 'CVE-2018-9314', headUnitHU_NBT).
+vulProperty('CVE-2018-9314', phyLocalExploit, verifiBypass).
+
+
+
+
+
+
+
+
+

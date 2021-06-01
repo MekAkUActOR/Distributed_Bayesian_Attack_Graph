@@ -1,0 +1,121 @@
+attackerLocated(internet).
+attackerLocated(physics).
+
+attackGoal(control(_)).
+attackGoal(execCode(_,_)).
+attackGoal(inside(_)).
+
+hacl(X,Y,_,_):-
+	inSubnet(X,S),
+	inSubnet(Y,S).
+
+hacl(internet,cloudplat_webserver1,httpProtocol,httpPort).
+hacl(internet,cloudplat_database1,tcp,sqlPort).
+
+
+hacl(M,cloudplat_webserver1,httpProtocol,httpPort):-
+	inSubnet(M,S).
+
+hacl(N,cloudplat_database1,tcp,sqlPort):-
+	inSubnet(N,S).
+
+hacl(physics, X, _, _):-
+	inSubnet(X,vsubnet1).
+
+hacl(physics, X, _, _):-
+	inSubnet(X,vsubnet2).
+
+hacl(physics, X, _, _):-
+	inSubnet(X,vsubnet3).
+
+
+
+/******************************************/
+/* configuration information of cloudplat */
+/******************************************/
+
+inSubnet(cloudplat_webserver1, cloudplat).
+inSubnet(cloudplat_database1, cloudplat).
+
+isWebServer(cloudplat_webserver1).
+/*pvexecCode(cloudplat_webserver1,user).*/
+
+/*****************************************/
+/* configuration information of vsubnet1 */
+/*****************************************/
+
+inSubnet(vsubnet1_MECserver, vsubnet1).
+inSubnet(vehicle1, vsubnet1).
+inSubnet(mobile1, vsubnet1).
+inSubnet(vehicle2, vsubnet1).
+inSubnet(mobile2, vsubnet1).
+inSubnet(vehicle3, vsubnet1).
+inSubnet(mobile3, vsubnet1).
+inSubnet(vehicle4, vsubnet1).
+inSubnet(mobile4, vsubnet1).
+inSubnet(vsubnet1_RSU1, vsubnet1).
+inSubnet(vsubnet1_RSU2, vsubnet1).
+
+vState(vehicle1, locked).
+vState(vehicle2, mov).
+vState(vehicle3, mov).
+vState(vehicle4, mov).
+
+inCompetent(vehicle1Owner).
+hasAccount(vehicle1Owner, vehicle1, user).
+hasAccount(vehicle1Owner, mobile1, user).
+inCompetent(vehicle2Owner).
+hasAccount(vehicle2Owner, vehicle2, user).
+hasAccount(vehicle2Owner, mobile2, user).
+inCompetent(vehicle3Owner).
+hasAccount(vehicle3Owner, vehicle3, user).
+hasAccount(vehicle3Owner, mobile3, user).
+inCompetent(vehicle4Owner).
+hasAccount(vehicle4Owner, vehicle4, user).
+hasAccount(vehicle4Owner, mobile4, user).
+
+pair(mobile1, vehicle1, bluetooth1).
+pair(mobile2, vehicle2, bluetooth2).
+pair(mobile3, vehicle3, bluetooth3).
+pair(mobile4, vehicle4, bluetooth4).
+
+
+installed(vehicle1, keyFobs).
+vulExists(vehicle1, 'CVE-2020-29438', keyFobs).
+vulProperty('CVE-2020-29438', phyShortExploit, infoLeak).
+
+installed(vehicle1, obdTeslaX).
+vulExists(vehicle1, 'CVE-2020-29440', obdTeslaX).
+vulProperty('CVE-2020-29440', phyLocalExploit, verifiBypass).
+
+vulExists(bluetooth1, 'CVE-2020-0022', daemons).
+vulProperty('CVE-2020-0022', phyShortExploit, verifiBypass).
+
+
+installed(vehicle2, obd2).
+vulExists(vehicle2, 'CVE-2018-11478', obd2).
+vulProperty('CVE-2018-11478', phyShortExploit, verifiBypass).
+
+
+clientProgram(vehicle3, chrome).
+installed(vehicle3, chrome).
+vulExists(vehicle3, 'CVE-2021-21220', chrome).
+vulProperty('CVE-2021-21220', remoteClient, privEscalation).
+
+installed(vehicle3, micomd).
+vulExists(vehicle3, 'CVE-2020-8539', micomd).
+vulProperty('CVE-2020-8539', localExploit, verifiBypass).
+
+
+
+
+
+
+
+
+
+
+
+
+
+

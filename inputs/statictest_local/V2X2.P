@@ -1,0 +1,105 @@
+attackerLocated(internet).
+attackerLocated(physics).
+
+attackGoal(control(_)).
+attackGoal(execCode(_,_)).
+attackGoal(inside(_)).
+
+hacl(X,Y,_,_):-
+	inSubnet(X,S),
+	inSubnet(Y,S).
+
+hacl(internet,cloudplat_webserver1,httpProtocol,httpPort).
+hacl(internet,cloudplat_database1,tcp,sqlPort).
+
+
+hacl(M,cloudplat_webserver1,httpProtocol,httpPort):-
+	inSubnet(M,S).
+
+hacl(N,cloudplat_database1,tcp,sqlPort):-
+	inSubnet(N,S).
+
+hacl(physics, X, _, _):-
+	inSubnet(X,vsubnet1).
+
+hacl(physics, X, _, _):-
+	inSubnet(X,vsubnet2).
+
+hacl(physics, X, _, _):-
+	inSubnet(X,vsubnet3).
+
+/******************************************/
+/* configuration information of cloudplat */
+/******************************************/
+
+inSubnet(cloudplat_webserver1, cloudplat).
+inSubnet(cloudplat_database1, cloudplat).
+
+isWebServer(cloudplat_webserver1).
+pvexecCode(cloudplat_webserver1,user).
+
+/*****************************************/
+/* configuration information of vsubnet2 */
+/*****************************************/
+inSubnet(vsubnet2_MECserver, vsubnet2).
+inSubnet(vehicle5, vsubnet2).
+inSubnet(mobile5, vsubnet2).
+inSubnet(vehicle6, vsubnet2).
+inSubnet(mobile6, vsubnet2).
+inSubnet(vehicle7, vsubnet2).
+inSubnet(mobile7, vsubnet2).
+inSubnet(vsubnet2_RSU, vsubnet2).
+
+vState(vehicle5, mov).
+vState(vehicle6, locked).
+vState(vehicle7, mov).
+
+inCompetent(vehicle5Owner).
+hasAccount(vehicle5Owner, vehicle5, user).
+hasAccount(vehicle5Owner, mobile5, user).
+inCompetent(vehicle6Owner).
+hasAccount(vehicle6Owner, vehicle6, user).
+hasAccount(vehicle6Owner, mobile6, user).
+inCompetent(vehicle7Owner).
+hasAccount(vehicle7Owner, vehicle7, user).
+hasAccount(vehicle7Owner, mobile7, user).
+
+pair(mobile5, vehicle5, bluetooth5).
+pair(mobile6, vehicle6, wifi6).
+pair(mobile7, vehicle7, bluetooth7).
+
+
+installed(vehicle5, keyFobs).
+vulExists(vehicle5, 'CVE-2020-29438', keyFobs).
+vulProperty('CVE-2020-29438', phyShortExploit, infoLeak).
+
+installed(vehicle5, obdTeslaX).
+vulExists(vehicle5, 'CVE-2020-29440', obdTeslaX).
+vulProperty('CVE-2020-29440', phyLocalExploit, verifiBypass).
+
+
+vulExists(wifi6, 'CVE-2018-11477', vgateiCar2WiFi).
+vulProperty('CVE-2018-11477', phyShortExploit, infoLeak).
+
+
+clientProgram(mobile7, chrome).
+vulExists(mobile7, 'CVE-2021-21220', chrome).
+vulProperty('CVE-2021-21220', remoteClient, privEscalation).
+
+installed(mobile7, teslaAPP).
+vulExists(mobile7, vulID, teslaAPP).
+vulProperty(vulID, localExploit, verifiBypass).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
