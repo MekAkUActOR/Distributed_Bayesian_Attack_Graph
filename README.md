@@ -9,6 +9,7 @@ make it difficult for people to analyze the overall security risk of the IoV eff
 is an urgent need for an IoV security risk analysis and assessment technique to obtain real-time IoV
 security status, assist network administrator to make security decisions, and efficiently maintain IoV
 security.
+
 This paper proposes a V2X IoV attack graph generation and analysis scheme for real-time and
 effective security risk analysis and assessment of the IoV. Firstly, we construct an IoV security
 ontology model to standardize the description of entities and the complex relationship between entities in the IoV. Then, based on the IoV security ontology model and the IoV security knowledge
